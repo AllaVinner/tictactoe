@@ -55,16 +55,7 @@ impl Board {
         }
         println!("{}", row_sep);
     }
-
-    fn pos_at_edge(&self, pos: Pos) -> bool {
-        if pos.row == 0 || pos.col == 0 {
-            return true;
-        }
-        if pos.row == self.shape.row -1 || pos.col == self.shape.col -1 {
-            return true;
-        }
-        return false;
-    }
+    
 
     fn pos_outside(&self, pos: Pos) -> bool {
         if pos.row >= self.shape.row || pos.col >= self.shape.col {
