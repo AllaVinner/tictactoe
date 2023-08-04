@@ -190,15 +190,26 @@ impl Add<Direction> for Pos {
     }
 }
 
-
+fn configure_tictactoe() -> TicTacToe {
+    println!("Who will play?");
+    let user_input: String = read!();
+    let players: Vec<Player> = user_input.chars().map(|c| Player{name: c}).collect();
+    println!("How big shall the board be? ");
+    let row: usize = read!();
+    let col: usize = read!();
+    let board_shape = Pos{row, col};
+    println!("How many in a row to win? ");
+    let ntic: usize = read!();
+    TicTacToe{
+        players: players,
+        board: create_empty_board(board_shape),
+        ntic: ntic,
+    }
+}
 
 fn main() {
     println!("Hello, world!");
-    let mut game = TicTacToe{
-        players: vec![Player{name: '¤'}, Player{name: 'O'}, Player{name: 'X'}],
-        board: create_empty_board(Pos{row: 7, col: 17}),
-        ntic: 3,
-    };
+    let mut game = configure_tictactoe();
     game.play();
     
 }
