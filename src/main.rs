@@ -13,6 +13,7 @@ pub enum Msg {
 
 
 pub struct App {
+    board: Vec<Option<usize>>,
     cellules_width: usize,
     cellules_height: usize
 }
@@ -25,9 +26,11 @@ impl Component for App {
     fn create(ctx: &Context<Self>) -> Self {
         let callback: Callback<()> = ctx.link().callback(|_| Msg::Tick);
         //let interval = Interval::new(200, move || callback.emit(()));
-        let (cellules_width, cellules_height) = (53, 40);
+        let (cellules_width, cellules_height) = (3, 3);
+        let board = vec![None; cellules_height*cellules_width];
 
         Self {
+            board,
             cellules_width,
             cellules_height
         }
@@ -36,6 +39,12 @@ impl Component for App {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::MakeMove(idx) => {
+                
+                self.board[idx] = match self.board[idx] {
+                    None => Some(1),
+                    _ => None,
+                };
+
                 true
             },
             Msg::Tick => true
@@ -44,7 +53,7 @@ impl Component for App {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let cells = vec![1; self.cellules_height*self.cellules_width];
-        let cell_rows = cells
+        let cell_rows = self.board
                 .chunks(self.cellules_width)
                 .enumerate()
                 .map(|(row, cellules)| {
@@ -53,8 +62,12 @@ impl Component for App {
                         .iter()
                         .enumerate()
                         .map(|(col, cell)| {
+                            let class = match cell {
+                                None => "cellule-live",
+                                _ => "cellule-dead"
+                            };
                             html! {
-                                <div key={idx_offset+col} class={classes!("game-cellule", "cellule-live")}
+                                <div key={idx_offset+col} class={classes!("game-cellule", class)}
                                     onclick={ctx.link().callback(move |_| Msg::MakeMove(idx_offset+col))}>
                                  </div>
                             }
