@@ -1,206 +1,93 @@
-use std::ops::{Add, Neg};
+extern crate yew;
+extern crate rand;
 
-use text_io::read;
+use rand::Rng;
+use yew::html::Scope;
+use yew::{classes, html, Component, Context, Html, Callback};
 
 
-#[derive(Clone, Copy, Debug)]
-struct Pos {
-    row: usize,
-    col: usize
-}
-
-#[derive(Clone, Copy, Debug)]
-struct Direction {
-    row: isize,
-    col: isize
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Player {
-    name: char
-}
-
-struct Board {
-    grid: Vec<Vec<Option<Player>>>,
-    shape: Pos
-}
-
-struct TicTacToe {
-    players: Vec<Player>,
-    board: Board,
-    ntic: usize,
+pub enum Msg {
+    Tick,
+    MakeMove(usize)
 }
 
 
-fn create_empty_board(shape: Pos) -> Board {
-    Board {
-        grid: vec![vec![None; shape.col]; shape.row],
-        shape: shape
-    }
+pub struct App {
+    cellules_width: usize,
+    cellules_height: usize
 }
 
-impl Board {
-    fn print(&self) {
-        let row_sep = format!("+{}", "-+".repeat(self.shape.col));
-        for row in &self.grid {
-            println!("{}", row_sep);
-            for cell in row {
-                let cell_char = match cell {
-                    None => ' ',
-                    Some(p) => p.name
-                };
-                print!("|{}", cell_char);
-            }
-            println!("|")
-        }
-        println!("{}", row_sep);
-    }
-    
 
-    fn pos_outside(&self, pos: Pos) -> bool {
-        if pos.row >= self.shape.row || pos.col >= self.shape.col {
-            return true;
-        }
-        return false;
-    }
+impl Component for App {
+    type Message = Msg;
+    type Properties = ();
 
-    fn is_pos_empty(&self, pos: Pos) -> bool {
-        match self.grid[pos.row][pos.col] {
-            Some(_) => false,
-            None => true
+    fn create(ctx: &Context<Self>) -> Self {
+        let callback: Callback<()> = ctx.link().callback(|_| Msg::Tick);
+        //let interval = Interval::new(200, move || callback.emit(()));
+        let (cellules_width, cellules_height) = (53, 40);
+
+        Self {
+            cellules_width,
+            cellules_height
         }
     }
 
-    fn make_move(&mut self, pos: Pos, player: Player){
-        self.grid[pos.row][pos.col] = Some(player);
-    }
-
-    fn get(&self, pos: Pos) -> Option<Player> {
-        self.grid[pos.row][pos.col]
-    }
-
-}
-
-
-impl TicTacToe {
-
-    fn play(&mut self) {
-        for player in self.players.iter().cycle() {
-            let m = self.get_move(*player);
-            self.board.make_move(m, *player);
-            self.board.print();
-            if self.was_move_winning(m) {
-                println!("Player {} won!", player.name);
-                break;
-            }
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Msg::MakeMove(idx) => {
+                true
+            },
+            Msg::Tick => true
         }
     }
 
-    fn get_move(&self, player: Player) -> Pos {
-        loop {
-            print!("Player {} turn: ", player.name);
-            let row = read!();
-            let col = read!();
-            let pos = Pos{row, col};
-            if self.board.pos_outside(pos) {
-                println!("In put was outside of the board.");
-                continue;
-            }
-            if ! self.board.is_pos_empty(pos) {
-                println!("Input position already occupied.");
-                continue;
-            }
-            return pos
-        }
-    }
-
-    fn was_move_winning(&self, m: Pos) -> bool {
-        let player = match self.board.get(m) {
-            None => return false,
-            Some(p) => p
-        };
-        for direction in vec![
-            Direction{row: 1, col: 0},
-            Direction{row: 0, col: 1},
-            Direction{row: 1, col: 1},
-            Direction{row: 1, col: -1},
-        ].into_iter() {
-            let mut current_ntic = 1;
-            for branch in vec![direction, -direction].into_iter(){
-                let mut currsor = m;
-                for _ in 1..self.ntic {
-                    currsor = match currsor + branch {
-                        None => break,
-                        Some(c) => c
-                    };
-
-                    if self.board.pos_outside(currsor) {
-                        break;
-                    }
-                    match self.board.get(currsor) {
-                        None => break,
-                        Some(p) => { 
-                            if p == player {
-                                current_ntic += 1;
-                            } else {
-                                break;
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let cells = vec![1; self.cellules_height*self.cellules_width];
+        let cell_rows = cells
+                .chunks(self.cellules_width)
+                .enumerate()
+                .map(|(row, cellules)| {
+                    let idx_offset = row * self.cellules_width;
+                    let cells = cellules
+                        .iter()
+                        .enumerate()
+                        .map(|(col, cell)| {
+                            html! {
+                                <div key={idx_offset+col} class={classes!("game-cellule", "cellule-live")}
+                                    onclick={ctx.link().callback(move |_| Msg::MakeMove(idx_offset+col))}>
+                                 </div>
                             }
-                        }
+                        });
+                    html! {
+                        <div key={row} class="game-row">
+                            { for cells }
+                        </div>
                     }
-                }
-            }
-            if current_ntic >= self.ntic {
-                return true;
-            }
+                });
+
+        html! {
+            <div>
+                <section class="game-container">
+                    <header class="app-header">
+                        <h1 class="app-title">{ "Rust Tac Toe" }</h1>
+                    </header>
+                    <section class="game-area">
+                        <div class="game-of-life">
+                            { for cell_rows }
+                        </div>
+                        <div class="game-buttons">
+                        </div>
+                    </section>
+                </section>
+            </div>
         }
-        return false;
     }
 }
 
-impl Neg for Direction{
-    type Output = Direction;
-
-    fn neg(self) -> Self::Output {
-        Direction{row: -self.row, col: -self.col}
-    }
-}
-
-impl Add<Direction> for Pos {
-    type Output = Option<Pos>;
-
-    fn add(self, rhs: Direction) -> Self::Output {
-        let row = match self.row.checked_add_signed(rhs.row) {
-            None => return None,
-            Some(r) => r
-        };
-        let col = match self.col.checked_add_signed(rhs.col) {
-            None => return None,
-            Some(c) => c
-        };
-        Some(Pos{row, col})
-    }
-}
-
-fn configure_tictactoe() -> TicTacToe {
-    println!("Who will play?");
-    let user_input: String = read!();
-    let players: Vec<Player> = user_input.chars().map(|c| Player{name: c}).collect();
-    println!("How big shall the board be? ");
-    let row: usize = read!();
-    let col: usize = read!();
-    let board_shape = Pos{row, col};
-    println!("How many in a row to win? ");
-    let ntic: usize = read!();
-    TicTacToe{
-        players: players,
-        board: create_empty_board(board_shape),
-        ntic: ntic,
-    }
-}
 
 fn main() {
-    println!("Hello, world!");
-    let mut game = configure_tictactoe();
-    game.play();
-    
+    wasm_logger::init(wasm_logger::Config::default());
+    log::trace!("Initializing yew...");
+    yew::Renderer::<App>::new().render();
 }
