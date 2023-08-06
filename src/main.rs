@@ -1,5 +1,12 @@
+mod player;
+mod coordinate;
+mod board;
+
+
 extern crate yew;
 extern crate rand;
+
+
 
 use rand::Rng;
 use yew::html::Scope;
